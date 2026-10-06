@@ -1,0 +1,79 @@
+# orb_slam3 可视化工具链
+
+把 ORB-SLAM3 的建图结果画成对照图的脚本。左边是重建出来的地图面板（地图点、关键帧轨迹、相机位置），
+右边是当前帧，拼起来就是 (a) / (a') 的对照版式，用来比对正常数据与被改过的数据在建图和轨迹上的差别。
+输出 PNG / PDF，也可以导出逐帧对照图和视频，版式参考论文 Fig.4。
+
+## 用法
+
+默认从 `~/ORB_SLAM3` 找 ORB-SLAM3，从 `~/dataset/slam_stereo_pairs_0_99_20260929` 找数据集，
+脚本放在哪个目录都可以：
+
+```bash
+cd ~/ORB_SLAM3/outputs/fig4_4seasons
+
+bash fix_crlf.sh           # 从 Windows 传过来的文件先修一下行尾，git clone 的一般不用
+bash make_orb_inputs.sh    # 生成相机 yaml 和 TUM 关联文件
+bash patch_stereo.sh       # 编译双目可视化例程 stereo_tum_vi_vis
+bash run_compare.sh --all  # 跑 SLAM + 拼 Fig.4 对照图
+
+bash run_deviation.sh                # 位移偏差 + 建图点云对比
+bash run_video.sh --triple --slam    # 逐帧视频（正常 + 两组干扰并排）
+bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图，不用跑 SLAM
+```
+
+没有显示器的时候（服务器、ssh）在命令前加 `DISPLAY=`，或者用 `xvfb-run -a` 包一层。
+
+路径可以用环境变量改：`ROOT`（默认 `~/ORB_SLAM3`）、`DS`（默认 `~/dataset/slam_stereo_pairs_0_99_20260929`）、
+`PY`（默认 `python3`），例如 `DS=/data/xxx ROOT=~/slam bash run_compare.sh --all`。
+
+## 文件说明
+
+| 文件 | 干什么 |
+|---|---|
+| `run_compare.sh` | 主脚本。跑 SLAM、导出每组结果、拼成 Fig.4 对照图。`--all` 一把梭，也可以 `--slam` / `--render` / `--figures` 分步跑 |
+| `compose_compare.py` | 拼版用。把地图面板和当前帧排成 (a)/(a') 版式，加标题和 Current Position 标注 |
+| `pangolin_panel2.py` | 画左边那块全局地图面板：地图点、关键帧轨迹、相机视锥，同时输出锚点 json |
+| `pick_map_shot.py` | 用真实 Pangolin 窗口截图当面板时，从一堆截图里挑一张清楚的 |
+| `capture_pangolin.sh` | 用 xvfb 批量抓真实 Pangolin 窗口截图，`--pangolin-shot` 时才用 |
+| `patch_stereo.sh` | 把双目可视化例程加进 ORB-SLAM3，编出 `stereo_tum_vi_vis` |
+| `patch_mono.sh` | 单目版本，备用（`run_compare.sh --mono`） |
+| `stereo_tum_vi_vis.cc` | 双目例程源码：存当前帧、导轨迹和地图点 csv、开 Viewer |
+| `mono_tum_vis.cc` | 单目例程源码，同上 |
+| `vis_export.h` | 导出相关的代码，写 map_points.csv / keyframes.csv / 特征点 csv |
+| `patch_cmake.py` | 编译辅助，自动找 CMake 里的目标并复用它的编译参数 |
+| `build_mono_vis.py` | 单目版的编译辅助 |
+| `install_dataset.sh` | 数据集 SHA256 校验，顺便生成路径清单 |
+| `make_orb_inputs.sh` / `make_orb_inputs.py` | 生成相机参数 yaml 和 TUM 关联文件 |
+| `run_frame_pairs.sh` / `export_frame_pairs.py` | 逐帧导出「原图 vs 被改图」对照图、对照表和 PDF |
+| `run_video.sh` / `make_fig4_video.py` | 逐帧视频：`--fig4` 论文版式、`--pair` 简版、`--triple` 三组并排 |
+| `run_deviation.sh` / `plot_deviation.py` | 位移偏差折线 + 建图点云对比（2x2 四个子图） |
+| `make_demo_data.py` | 造一份假的演示数据，没有数据集也能先跑通版式 |
+| `ls_vis_4seasons.sh` | 自检脚本，逐条检查路径和源码改动在不在 |
+| `dump_api.sh` | 编译报错时用，打印当前 ORB-SLAM3 里相关 API 的真实签名 |
+| `fix_crlf.sh` | 修行尾，Windows 传过来的文件跑一下 |
+| `README_4seasons.md` | 详细说明：各种参数、产物路径、每种图怎么调 |
+
+## 依赖
+
+- Linux，已编译过的 ORB-SLAM3（默认 `~/ORB_SLAM3`）
+- Python 3 + numpy、matplotlib、Pillow
+- ffmpeg、xvfb（可选，没有 ffmpeg 就只出 GIF）
+- 中文字体（可选，没装的话图里自动用英文）
+
+```bash
+sudo apt-get install -y python3-numpy python3-matplotlib python3-pil ffmpeg xvfb
+```
+
+## 数据
+
+- 三组数据：`<数据集目录>/clean`、`fixed_pixel`、`world_plane`，每组 100 帧、左右目各一张，
+  帧号和时间戳的对应表是 `<数据集目录>/comparison_pairs.csv`。
+- 索引 0~7 三组是一样的，只有 8 之后被改过，所以每组都要从第 0 帧开始单独跑一遍。
+- 数据集没有 ground truth，偏差图以 clean 组的估计轨迹为基准，表示相对正常结果偏了多少。
+
+## 声明
+
+本仓库代码仅供学习与交流使用，请勿用于商业用途，转载请注明出处。
+
+数据集版权归数据集作者所有，本仓库不包含数据集文件。

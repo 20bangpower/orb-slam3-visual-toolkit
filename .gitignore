@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# 运行产物（不要把图和视频提交进仓库）
+runs/
+figures/
+video/
+frame_pairs/
+shots/
+_raw/
+*.mp4
+*.gif
+demo/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp

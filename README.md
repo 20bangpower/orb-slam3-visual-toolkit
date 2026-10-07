@@ -47,7 +47,7 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 | `make_orb_inputs.sh` / `make_orb_inputs.py` | 生成相机参数 yaml 和 TUM 关联文件 |
 | `run_frame_pairs.sh` / `export_frame_pairs.py` | 逐帧导出「原图 vs 被改图」对照图、对照表和 PDF |
 | `run_video.sh` / `make_fig4_video.py` | 逐帧视频：`--fig4` 论文版式、`--pair` 简版、`--triple` 三组并排 |
-| `run_deviation.sh` / `plot_deviation.py` | 位移偏差折线 + 建图点云对比（2x2 四个子图） |
+| `run_deviation.sh` / `plot_deviation.py` | 位移偏差折线 + 建图点云对比（两个干扰组时 2x2，只有一个时自动 1x2） |
 | `make_demo_data.py` | 造一份假的演示数据，没有数据集也能先跑通版式 |
 | `ls_vis_4seasons.sh` | 自检脚本，逐条检查路径和源码改动在不在 |
 | `dump_api.sh` | 编译报错时用，打印当前 ORB-SLAM3 里相关 API 的真实签名 |
@@ -67,8 +67,10 @@ sudo apt-get install -y python3-numpy python3-matplotlib python3-pil ffmpeg xvfb
 
 ## 数据
 
-- 三组数据：`<数据集目录>/clean`、`fixed_pixel`、`world_plane`，每组 100 帧、左右目各一张，
+- 完整是三组：`<数据集目录>/clean`、`fixed_pixel`、`world_plane`，每组 100 帧、左右目各一张，
   帧号和时间戳的对应表是 `<数据集目录>/comparison_pairs.csv`。
+- 组数不写死。只有 `clean` + 一个干扰组时，缺的那组自动跳过、排版降级
+  （对照图少一行、视频少一块、偏差图从 2x2 变 1x2），一样能出图。
 - 索引 0~7 三组是一样的，只有 8 之后被改过，所以每组都要从第 0 帧开始单独跑一遍。
 - 数据集没有 ground truth，偏差图以 clean 组的估计轨迹为基准，表示相对正常结果偏了多少。
 

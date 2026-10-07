@@ -241,10 +241,17 @@ def main():
     ts2idx = {round(ts, 6): i for i, ts in idx2ts.items()}
 
     print("[i] 运行目录: %s（下面所有数字都来自这里的真实产物）" % args.runs)
-    ref_rows = load_tum(os.path.join(args.runs, ref, "CameraTrajectory.txt"))
+    # 双目有 CameraTrajectory.txt；单目没有，退回 KeyFrameTrajectory.txt（所有组统一用同一种）
+    traj_name = "CameraTrajectory.txt"
+    ref_rows = load_tum(os.path.join(args.runs, ref, traj_name))
     if len(ref_rows) < 2:
-        raise SystemExit("[x] 读不到 %s/CameraTrajectory.txt —— 先跑 bash run_compare.sh --slam"
-                         % os.path.join(args.runs, ref))
+        traj_name = "KeyFrameTrajectory.txt"
+        ref_rows = load_tum(os.path.join(args.runs, ref, traj_name))
+    if len(ref_rows) < 2:
+        raise SystemExit("[x] 读不到 %s/ 下的 CameraTrajectory.txt 或 KeyFrameTrajectory.txt"
+                         " —— 先跑 bash run_compare.sh --slam" % os.path.join(args.runs, ref))
+    if traj_name != "CameraTrajectory.txt":
+        print("[i] 单目没有逐帧轨迹，基准和干扰组统一用 %s" % traj_name)
     L_ref = path_length(ref_rows)
     ref_cloud = load_xyz(os.path.join(args.runs, ref, "map_points.csv"))
     print("[i] 基准 %s: %d 帧, 轨迹长度 %.3f m, 地图点 %s"
@@ -253,9 +260,9 @@ def main():
 
     data = {}
     for g in groups:
-        rows = load_tum(os.path.join(args.runs, g, "CameraTrajectory.txt"))
+        rows = load_tum(os.path.join(args.runs, g, traj_name))
         if len(rows) < 2:
-            print("[!] 跳过 %s：没有/不足两帧的 CameraTrajectory.txt" % g)
+            print("[!] 跳过 %s：没有/不足两帧的 %s" % (g, traj_name))
             continue
         dev, miss = align_deviation(ref_rows, rows)
         if not dev:
@@ -284,18 +291,9 @@ def main():
     if not data:
         raise SystemExit("[x] 一个攻击组都没读成功")
 
-    # ------------------------------------------------------------------ 画
-    # 建图点云先剔掉"离得过于远的极端少数点"，否则个别远点会把视图压扁
-    clouds = {ref: ref_cloud}
-    for _g, _s in data.items():
-        clouds[_g] = _s["cloud"]
-
-
-
     # ------------------------------------------------------------------ 绘图
-    # 2x2 版式：
-    #   上排 (a)(b) = 位移偏差折线：固定像素贴图 / 世界平面投影贴图 各自与正常数据集对比
-    #   下排 (c)(d) = 建图点云对比：同上两组各自与正常数据集对比
+    # 两个干扰组 -> 2x2：上排 (a)(b) 位移偏差折线，下排 (c)(d) 建图点云对比
+    # 只有一个干扰组 -> 自动降级成 1x2：(a) 偏差折线 + (b) 建图对比
     clouds = {ref: ref_cloud}
     for _g, _s in data.items():
         clouds[_g] = _s["cloud"]
@@ -307,9 +305,14 @@ def main():
 
     legend_fs, title_fs, label_fs, tick_fs = 8.0, 10.5, 9.5, 8.5
 
-    fig, axes = plt.subplots(2, 2, figsize=(15.4, 10.6))
-    ax_dev = (axes[0][0], axes[0][1])
-    ax_map = (axes[1][0], axes[1][1])
+    if len(pairs) >= 2:
+        fig, axes = plt.subplots(2, 2, figsize=(15.4, 10.6))
+        slots = [(axes[0][0], axes[1][0], "a", "c"),
+                 (axes[0][1], axes[1][1], "b", "d")]
+    else:
+        # 只有一组干扰数据：一排放两个子图（左=偏差折线，右=建图对比）
+        fig, axes = plt.subplots(1, 2, figsize=(15.4, 5.9))
+        slots = [(axes[0], axes[1], "a", "b")]
 
     # ---------------- 上排：位移偏差折线（基线 = 正常数据集）
     def draw_dev(ax, group, s_, letter):
@@ -452,25 +455,32 @@ def main():
         ax.legend(fontsize=legend_fs, loc=loc_map[leg_corner], framealpha=0.92,
                   borderaxespad=0.6)
 
-    for i in range(2):
-        if i < len(pairs):
-            g, s_ = pairs[i]
-            draw_dev(ax_dev[i], g, s_, "ab"[i])
-            draw_map(ax_map[i], g, "cd"[i])
-        else:
-            for ax in (ax_dev[i], ax_map[i]):
-                ax.axis("off")
+    for (g, s_), (ax_d, ax_m, l_dev, l_map) in zip(pairs, slots):
+        draw_dev(ax_d, g, s_, l_dev)
+        draw_map(ax_m, g, l_map)
+    for ax_d, ax_m, _l1, _l2 in slots[len(pairs):]:
+        ax_d.axis("off")
+        ax_m.axis("off")
 
     if cjk_ok:
         supt = ("正常数据集 vs 干扰数据集：位移偏差与建图对比（基准 = %s，无 ground truth）"
                 % ref)
-        note = ("注：(a)(b) 为逐帧位移偏差折线，基准 = %s 估计轨迹；"
-                "(c)(d) 为全部地图点 X-Z 俯视，蓝 = 正常数据集，红 = 干扰数据集，"
-                "角落子图为密集区放大。" % ref)
+        if len(pairs) >= 2:
+            note = ("注：(a)(b) 为逐帧位移偏差折线，基准 = %s 估计轨迹；"
+                    "(c)(d) 为全部地图点 X-Z 俯视，蓝 = 正常数据集，红 = 干扰数据集，"
+                    "角落子图为密集区放大。" % ref)
+        else:
+            note = ("注：(a) 为逐帧位移偏差折线，基准 = %s 估计轨迹；"
+                    "(b) 为全部地图点 X-Z 俯视，蓝 = 正常数据集，红 = 干扰数据集，"
+                    "角落子图为密集区放大。" % ref)
     else:
         supt = "clean vs attacked: deviation and mapping (baseline = %s)" % ref
-        note = ("Note: (a)(b) per-frame deviation vs %s; (c)(d) all map points in X-Z, "
-                "blue = clean, red = attacked, corner inset = dense region." % ref)
+        if len(pairs) >= 2:
+            note = ("Note: (a)(b) per-frame deviation vs %s; (c)(d) all map points in X-Z, "
+                    "blue = clean, red = attacked, corner inset = dense region." % ref)
+        else:
+            note = ("Note: (a) per-frame deviation vs %s; (b) all map points in X-Z, "
+                    "blue = clean, red = attacked, corner inset = dense region." % ref)
     fig.suptitle(supt, fontsize=12.5, y=0.985)
     fig.text(0.5, 0.012, note, ha="center", fontsize=8.2, color="#555555")
     fig.tight_layout(rect=(0.0, 0.028, 1.0, 0.955), h_pad=2.0, w_pad=1.4)

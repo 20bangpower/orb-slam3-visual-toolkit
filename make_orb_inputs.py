@@ -105,8 +105,11 @@ def main():
     os.makedirs(out, exist_ok=True)
 
     for group in [g.strip() for g in args.groups.split(",") if g.strip()]:
-        rows = read_pairs(ds_root, group)
         gdir = os.path.join(ds_root, group)
+        if not os.path.isdir(gdir):
+            print("[!] 数据集里没有 %s，跳过（少一组也能正常出图）" % group)
+            continue
+        rows = read_pairs(ds_root, group)
         mono, mono_abs, stereo = [], [], []
         for r in rows:
             ts = r["timestamp_seconds"]

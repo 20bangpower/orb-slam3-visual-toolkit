@@ -21,6 +21,27 @@ cd ~/ORB_SLAM3/outputs/fig4_4seasons
 bash run_compare.sh --all
 ```
 
+## 只有两组数据也能跑
+
+三组（`clean` + `fixed_pixel` + `world_plane`）是完整形态，但脚本不写死组数：
+数据集里只有 `clean` + 一个干扰组时，缺的那组自动跳过，排版跟着降级，一样能出图。
+
+| 产物 | 三组（完整） | 只有两组 |
+|---|---|---|
+| 对照图 `run_compare.sh` | `fig4_4seasons_fixed_pixel` / `_world_plane`，再拼一张 `_both`（两行叠一起） | 只出存在那组的对照图，不再拼 `_both` |
+| 逐帧视频 `run_video.sh --triple` | 一帧 3 个板块（正常 + 两组干扰），画布 2560 宽 | 一帧 2 个板块（正常 + 那一组干扰），画布 1920 宽 |
+| 偏差图 `run_deviation.sh` | 2x2：上排两条偏差折线，下排两张建图对比 | 1x2：(a) 偏差折线 + (b) 建图对比 |
+| 逐帧对照图 `run_frame_pairs.sh` | 两个干扰组各导一套逐帧对照页 | 只导存在那组 |
+
+判断某一组在不在，看 `DS/<组>` 或 `RUNS/<组>` 目录有没有；跳过的组会打印 `[!] 数据集里没有 X，跳过这一组`。
+`clean` 必须有，否则脚本直接报错退出。想手动限定处理哪几组：
+
+```bash
+VIS_GROUPS=clean,fixed_pixel bash run_compare.sh --all
+bash run_video.sh --triple --groups fixed_pixel
+bash run_deviation.sh --groups fixed_pixel
+```
+
 ## 首次准备（四步）
 
 ```bash
@@ -107,9 +128,11 @@ $ROOT/runs/4seasons/<group>/
 
 $ROOT/outputs/fig4_4seasons/figures/
     fig4_4seasons_fixed_pixel.png/.pdf   (a) clean  vs  (a') fixed_pixel
-    fig4_4seasons_world_plane.png/.pdf   (a) clean  vs  (a') world_plane
-    fig4_4seasons_both.png/.pdf          (a)(a') / (b)(b') 两行叠一张
+    fig4_4seasons_world_plane.png/.pdf   (a) clean  vs  (a') world_plane   # 仅当该组存在
+    fig4_4seasons_both.png/.pdf          (a)(a') / (b)(b') 两行叠一张        # 仅两组都在时
 ```
+
+> 只有两组数据（没有 `world_plane`）时，`_world_plane` / `_both` 不会生成，只有 `_fixed_pixel`。
 
 ## 逐帧导出：每张被改的原图 vs 原图（便于分析）
 
@@ -236,7 +259,6 @@ bash run_deviation.sh
 > 所以读数表示"相对正常估计偏移了多少"，不是绝对定位误差。
 
 > 数据来源：(a)(b) 需要各组 `CameraTrajectory.txt`（跑过 `bash run_compare.sh --all`）；
-> (c)(d) 需要各组 `map_points.csv`（同一次运行导出）。
 > (c)(d) 需要各组 `map_points.csv`（同一次运行导出）。
 ## 可调旋钮
 

@@ -86,6 +86,17 @@ if [ ! -d "$DS/clean" ]; then
   exit 1
 fi
 
+# 只保留真实存在的干扰组：对面少一组也能正常出图
+_keep=""
+for g in ${VID_GROUPS//,/ }; do
+  if [ -d "$DS/$g" ] || [ -d "$RUNS/$g" ]; then _keep="${_keep:+$_keep,}$g"
+  else echo "[!] 数据集里没有 $g，跳过这一组"; fi
+done
+VID_GROUPS="$_keep"
+if [ -z "$VID_GROUPS" ]; then
+  echo "[x] 一组干扰数据都没有（$DS 下应有 <组> 目录）"; exit 1
+fi
+
 # ---------------------------------------------------------------- fig4 快照
 need_slam() {
   if [ "$DO_SLAM" = "1" ]; then return 0; fi

@@ -66,13 +66,18 @@ python3 "$ROOT/verify_files.py"
 echo
 echo "[3/3] 生成绝对路径清单"
 for g in clean fixed_pixel world_plane; do
-  python3 "$ROOT/build_absolute_manifest.py" "$g"
+  if [ -d "$ROOT/$g" ]; then
+    python3 "$ROOT/build_absolute_manifest.py" "$g"
+  else
+    echo "[!] 数据集里没有 $g，跳过（两组数据也能正常出图）"
+  fi
 done
 
 echo
 echo "======== 数据集就绪 ========"
 echo "DS_ROOT = $ROOT"
 for g in clean fixed_pixel world_plane; do
+  [ -d "$ROOT/$g" ] || continue
   n=$(ls "$ROOT/$g/cam0" 2>/dev/null | wc -l || true)
   m=$(ls "$ROOT/$g/cam1" 2>/dev/null | wc -l || true)
   printf '  %-12s cam0=%-4s cam1=%-4s\n' "$g" "$n" "$m"

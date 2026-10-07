@@ -102,8 +102,9 @@ def load_rows_fallback(ds, groups):
         return None, None
     n = min(len(v) for v in per.values())
     rows = []
+    keys = list(per)          # 只有真实存在的组才会进 per
     for i in range(n):
-        r0 = per[groups[0]][i]
+        r0 = per[keys[0]][i]
         row = {"frame_index": r0["frame_index"], "timestamp_seconds": r0["timestamp_seconds"],
                "modified_in_variants": r0.get("modified", "1")}
         for g, lst in per.items():
@@ -133,6 +134,16 @@ def main():
     out = os.path.abspath(os.path.expanduser(args.out))
     groups = [g.strip() for g in args.groups.split(",") if g.strip()]
     cams = [c.strip() for c in args.cams.split(",") if c.strip()]
+
+    # 只保留数据集里真的有的干扰组：对面少一组也能正常出图
+    keep = [g for g in groups if os.path.isdir(os.path.join(ds, g))]
+    for g in groups:
+        if g not in keep:
+            print("[!] 数据集里没有 %s，跳过这一组" % g)
+    groups = keep
+    if not groups:
+        print("[x] 一组干扰数据都没有（%s 下应有 <组> 目录）" % ds)
+        return 1
 
     rows, src = load_rows(ds)
     if rows is None:

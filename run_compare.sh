@@ -121,6 +121,22 @@ fi
 
 VIS_GROUPS="${VIS_GROUPS:-clean,fixed_pixel,world_plane}"
 FIGURES="${FIGURES:-fixed_pixel,world_plane}"
+
+# 只保留真实存在的组：对面少一组干扰数据也能正常出图
+keep_groups() {   # $1 = 逗号分隔的组名 -> 回显还存在的
+  local out="" g
+  for g in ${1//,/ }; do
+    if [ -d "$DS/$g" ] || [ -d "$RUNS/$g" ]; then out="${out:+$out,}$g"
+    else echo "      [!] 数据集里没有 $g，跳过这一组" >&2; fi
+  done
+  printf '%s' "$out"
+}
+VIS_GROUPS="$(keep_groups "$VIS_GROUPS")"
+FIGURES="$(keep_groups "$FIGURES")"
+case ",$VIS_GROUPS," in
+  *,clean,*) ;;
+  *) echo "[x] 少了 clean 组（$DS/clean 或 $RUNS/clean 要有）"; exit 1 ;;
+esac
 GROUP_LIST="${VIS_GROUPS//,/ }"
 FIG_LIST="${FIGURES//,/ }"
 

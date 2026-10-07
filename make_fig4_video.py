@@ -139,8 +139,10 @@ def slide_pair(rec, ds, group, cam, args, fonts):
     side = "left" if cam == "cam0" else "right"
     p_clean = os.path.join(ds, rec["clean_" + side])
     p_mod = os.path.join(ds, rec["%s_%s" % (group, side)])
-    if not (os.path.isfile(p_clean) and os.path.isfile(p_mod)):
-        raise FileNotFoundError("%s | %s" % (p_clean, p_mod))
+    _miss = [p for p in (p_clean, p_mod) if not os.path.isfile(p)]
+    if _miss:
+        raise FileNotFoundError("找不到图片 %s（检查 --ds 指向的数据集目录）"
+                                % " | ".join(_miss))
 
     a = Image.open(p_clean).convert("RGB")
     b = Image.open(p_mod).convert("RGB")
@@ -550,15 +552,30 @@ def main():
 
     groups = [g for g in args.groups.split(",") if g]
     cams = [c for c in args.cams.split(",") if c]
+
+    # 只保留真实存在的组：对面少一组干扰数据也能正常出图
+    def group_ok(name):
+        cands = [os.path.join(args.ds, name)]
+        if args.runs:
+            cands.append(os.path.join(args.runs, name))
+        return any(os.path.isdir(c) for c in cands)
+
+    keep = [g for g in groups if group_ok(g)]
+    for g in groups:
+        if g not in keep:
+            print("[!] 数据集里没有 %s，跳过这一组" % g)
+    groups = keep
+    if not groups:
+        raise SystemExit("[x] 一组干扰数据都没有（%s 下应有 <组> 目录）" % args.ds)
+
     triple_groups = list(groups)
     if args.triple:
         if args.mode != "fig4":
             raise SystemExit("[x] --triple 只在 fig4 模式有效")
-        if len(groups) < 2:
-            raise SystemExit("[x] --triple 需要至少两个干扰组，如 --groups fixed_pixel,world_plane")
         groups = ["triple"]
         if args.width == 1920:
-            args.width = 2560          # 一帧 3 板块，默认加宽才看得清
+            # 一帧 N 个板块：两组干扰加宽到 2560；只有一组时 1920 就够
+            args.width = 2560 if len(triple_groups) >= 2 else 1920
     if args.mode == "fig4" and "cam0" not in cams:
         raise SystemExit("[x] fig4 模式的逐帧快照只有左目(cam0)，请用 --cams cam0")
 

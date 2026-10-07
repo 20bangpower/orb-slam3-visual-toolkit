@@ -34,8 +34,9 @@ if [ -z "${DS:-}" ]; then
   if [ -z "$DS" ]; then DS="$HOME/dataset/$DS_NAME"; fi
 fi
 
-if [ ! -f "$RUNS/clean/CameraTrajectory.txt" ]; then
-  echo "[x] 缺 $RUNS/clean/CameraTrajectory.txt —— 先跑 bash run_compare.sh --slam"
+if [ ! -f "$RUNS/clean/CameraTrajectory.txt" ] && [ ! -f "$RUNS/clean/KeyFrameTrajectory.txt" ]; then
+  echo "[x] 缺 $RUNS/clean/CameraTrajectory.txt（单目是 KeyFrameTrajectory.txt）"
+  echo "    先跑 bash run_compare.sh --slam"
   exit 1
 fi
 

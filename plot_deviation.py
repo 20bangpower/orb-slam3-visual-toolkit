@@ -86,12 +86,12 @@ def load_tum(path):
     rows = []
     if not path or not os.path.isfile(path):
         return rows
-    with open(path, "r", errors="ignore") as fh:
+    with open(path, "r", encoding="utf-8-sig", errors="ignore") as fh:
         for line in fh:
-            line = line.strip()
+            line = line.strip().lstrip("\ufeff")
             if not line or line.startswith("#"):
                 continue
-            v = line.replace(",", " ").split()
+            v = line.replace(",", " ").replace(";", " ").split()
             if len(v) < 4:
                 continue
             try:
@@ -108,12 +108,12 @@ def load_xyz(path, cap=400000):
     pts = []
     if not path or not os.path.isfile(path):
         return None
-    with open(path, "r", errors="ignore") as fh:
+    with open(path, "r", encoding="utf-8-sig", errors="ignore") as fh:
         for line in fh:
-            line = line.strip()
+            line = line.strip().lstrip("\ufeff")
             if not line or line[0].isalpha():
                 continue
-            v = line.replace(",", " ").split()
+            v = line.replace(",", " ").replace(";", " ").split()
             if len(v) < 3:
                 continue
             try:
@@ -129,9 +129,9 @@ def count_data_rows(path):
     n = 0
     if not path or not os.path.isfile(path):
         return None
-    with open(path, "r", errors="ignore") as fh:
+    with open(path, "r", encoding="utf-8-sig", errors="ignore") as fh:
         for line in fh:
-            s = line.strip()
+            s = line.strip().lstrip("\ufeff")
             if not s or s[0].isalpha():
                 continue
             n += 1

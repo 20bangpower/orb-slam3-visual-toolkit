@@ -383,6 +383,88 @@ def case_bad_inputs(root, out):
     add("6 不存在的组：要明确提示", no_traceback(txt) and ("[x]" in txt or "[!]" in txt), sec, tail(txt, 1))
 
 
+def case_dirty_data(root, out):
+    """脏数据：BOM / 制表符 / 分号 / 空文件 / 单目风格 / 帧数不一致。"""
+    ign = shutil.ignore_patterns("outputs")
+
+    # 8a 带 BOM 的 csv + 制表符 + 多一列 + 半角分号 + 科学计数，
+    #    写 6 行，最后一行只有两列是故意写坏的 -> 应该读到 5 个点
+    d = os.path.join(out, "dirty_csv")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    shutil.copytree(root, d, ignore=ign)
+    with open(os.path.join(runs_dir(d, "fixed_pixel"), "map_points.csv"),
+              "w", encoding="utf-8-sig", newline="\n") as fh:
+        fh.write("# comment\n\nx,y,z\n")
+        fh.write("1.0,2.0,3.0\n")
+        fh.write("2.0\t3.0\t4.0\n")
+        fh.write("3.0,4.0,5.0,0.9\n")
+        fh.write("1e-3,2E-3,3e-3\n")
+        fh.write("5.0;6.0;7.0\n")
+        fh.write("7.0,8.0\n")
+    rc, txt, sec = run([tool("pangolin_panel2.py")] + panel_args(d, "fixed_pixel", 520, 380))
+    add("8 脏 csv（BOM/制表符/分号/多列）", rc == 0 and "黑点 5" in txt and no_traceback(txt),
+        sec, tail(txt, 1))
+
+    # 8b 单目风格：三组都没有 CameraTrajectory.txt，偏差图要退回关键帧轨迹
+    d = os.path.join(out, "dirty_mono")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    shutil.copytree(root, d, ignore=ign)
+    for g in GROUPS:
+        p = os.path.join(runs_dir(d, g), "CameraTrajectory.txt")
+        if os.path.isfile(p):
+            os.remove(p)
+    rc, txt, sec = run([tool("plot_deviation.py"), "--ds", ARGS.ds,
+                        "--runs", os.path.join(d, "runs", "4seasons"),
+                        "--groups", "fixed_pixel,world_plane",
+                        "--out", os.path.join(out, "dirty_mono_dev"), "--dpi", "80"])
+    add("8b 单目风格（无 CameraTrajectory）",
+        rc == 0 and "单目没有逐帧轨迹" in txt and no_traceback(txt), sec, tail(txt, 1))
+
+    # 8c 轨迹整个空 / 地图点空文件 -> 跳过坏组，剩下的照常出图
+    d = os.path.join(out, "dirty_empty")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    shutil.copytree(root, d, ignore=ign)
+    for n in ("CameraTrajectory.txt", "KeyFrameTrajectory.txt"):
+        open(os.path.join(runs_dir(d, "world_plane"), n), "w").close()
+    open(os.path.join(runs_dir(d, "fixed_pixel"), "map_points.csv"), "w").close()
+    rc, txt, sec = run([tool("plot_deviation.py"), "--ds", ARGS.ds,
+                        "--runs", os.path.join(d, "runs", "4seasons"),
+                        "--groups", "fixed_pixel,world_plane",
+                        "--out", os.path.join(out, "dirty_empty_dev"), "--dpi", "80"])
+    add("8c 空文件：跳过坏组继续出图",
+        rc == 0 and "跳过 world_plane" in txt and "地图点=无" in txt and no_traceback(txt),
+        sec, tail(txt, 1))
+
+    # 8d 帧数不一致 + 时间戳错位，要如实报未对齐而不是崩
+    d = os.path.join(out, "dirty_len")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    shutil.copytree(root, d, ignore=ign)
+    for g in ("fixed_pixel", "world_plane"):
+        for n in ("CameraTrajectory.txt", "KeyFrameTrajectory.txt"):
+            fp = os.path.join(runs_dir(d, g), n)
+            with open(fp, encoding="utf-8", errors="ignore") as fh:
+                lines = [l for l in fh.read().splitlines() if l.strip()]
+            keep = lines[:max(3, int(len(lines) * 0.5))]
+            rows = []
+            for k, l in enumerate(keep):
+                v = l.split()
+                if k % 7 == 0 and v:
+                    v[0] = "%.6f" % (float(v[0]) + 9.0)
+                rows.append(" ".join(v))
+            with open(fp, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write("\n".join(rows) + "\n")
+    rc, txt, sec = run([tool("plot_deviation.py"), "--ds", ARGS.ds,
+                        "--runs", os.path.join(d, "runs", "4seasons"),
+                        "--groups", "fixed_pixel,world_plane",
+                        "--out", os.path.join(out, "dirty_len_dev"), "--dpi", "80"])
+    add("8d 帧数不一致 / 时间戳错位",
+        rc == 0 and "未对齐" in txt and no_traceback(txt), sec, tail(txt, 1))
+
+
 def free_port(start):
     """找一个真能独占绑上的端口（免得被上一次没关干净的界面占着）。"""
     for port in range(start, start + 40):
@@ -519,6 +601,9 @@ def main():
     case_frame_pairs(root, os.path.join(root, "outputs", "fig4_4seasons", "frame_pairs"))
     print("\n[6] 坏输入")
     case_bad_inputs(root, figdir)
+    print("\n[8] 脏数据（BOM/制表符/空文件/单目/帧数不一致）")
+    case_dirty_data(root, out)
+
     print("\n[7] 网页界面")
     case_gui(root, a.ds_two, root_two)
 

@@ -36,6 +36,7 @@ Windows 上直接双击 `orb-slam3-visual-toolkit.exe`（和 `gui_app.py` 放同
 从 zip 解压出来如果被系统拦下：SmartScreen 弹窗点「更多信息 -> 仍要运行」，或者右键 exe -> 属性 -> 勾上「解除锁定」。
 exe 自己只干两件事 —— 找 `gui_app.py`、找 Python 3，不依赖别的库；没装 Python 3 会提示去官网装（记得勾 Add python.exe to PATH）。
 解压到带中文或空格的目录也能用。
+Windows 上起界面只要 Python 3，但出图那几步要 bash，所以还是回 Linux/VM 里跑；页面会自己检测 bash 能不能用，不能用会在页眉直接标出来。
 
 路径可以用环境变量改：`ROOT`（默认 `~/ORB_SLAM3`）、`DS`（默认 `~/dataset/slam_stereo_pairs_0_99_20260929`）、
 `PY`（默认 `python3`），例如 `DS=/data/xxx ROOT=~/slam bash run_compare.sh --all`。

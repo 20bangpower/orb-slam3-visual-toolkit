@@ -64,13 +64,13 @@ def load_tum(path):
     if not path or not os.path.isfile(path):
         return None, None
     xyz, quat = [], []
-    with open(path, "r", errors="ignore") as fh:
+    with open(path, "r", encoding="utf-8-sig", errors="ignore") as fh:
         for line in fh:
-            line = line.strip()
+            line = line.strip().lstrip("\ufeff")
             if not line or line.startswith("#"):
                 continue
             try:
-                vals = [float(v) for v in line.replace(",", " ").split()[:8]]
+                vals = [float(v) for v in line.replace(",", " ").replace(";", " ").split()[:8]]
             except ValueError:
                 continue
             if len(vals) >= 8:
@@ -86,9 +86,9 @@ def load_xyz(path, max_n=600000):
     if not path or not os.path.isfile(path):
         return None
     pts = []
-    with open(path, "r", errors="ignore") as fh:
+    with open(path, "r", encoding="utf-8-sig", errors="ignore") as fh:
         for line in fh:
-            s = line.strip()
+            s = line.strip().lstrip("\ufeff")
             if not s or s[0].isalpha():          # 跳过 x,y,z 表头
                 continue
             p = s.replace(",", " ").replace(";", " ").split()

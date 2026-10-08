@@ -38,8 +38,23 @@ ALL_GROUPS = ["clean", "fixed_pixel", "world_plane"]
 GROUP_CN = {"clean": "正常数据集",
             "fixed_pixel": "固定像素贴图",
             "world_plane": "世界平面投影贴图"}
+def bash_works(path):
+    """光 which 到 bash 不算：Windows 上 system32\\bash.exe 是 WSL 的占位程序，
+    点了按钮只会抛一句看不懂的错；这里真跑一次 echo 才算数。"""
+    if not path:
+        return False
+    try:
+        p = subprocess.run([path, "-c", "echo ok"], stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, timeout=5)
+        return p.returncode == 0 and b"ok" in p.stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 BASH = shutil.which("bash")
-HAS_BASH = bool(BASH)
+if not BASH and os.path.isfile("/bin/bash"):   # PATH 里没有但系统里有
+    BASH = "/bin/bash"
+HAS_BASH = bash_works(BASH)
 BASH = BASH or "/bin/bash"
 IMG_EXT = (".png", ".jpg", ".jpeg", ".gif", ".svg")
 VID_EXT = (".mp4", ".webm", ".gif")
@@ -502,8 +517,11 @@ function render() {
   }
   $("groups").innerHTML = h;
   var c = $("chip");
+  if (!S.has_bash) {
+    $("hint").textContent = "这台机器上没有可用的 bash：界面能开，但出图 / 出视频要在 Linux（VM）里跑。";
+  }
   if (!S.has_scripts) { c.textContent = "找不到脚本"; c.className = "tag miss"; }
-  else if (!S.has_bash) { c.textContent = "缺 bash（出图得在 Linux 上跑）"; c.className = "tag miss"; }
+  else if (!S.has_bash) { c.textContent = "缺 bash（出图要在 Linux 上跑）"; c.className = "tag miss"; }
   else if (!S.has_ds_clean) { c.textContent = "还没指定数据集"; c.className = "tag miss"; }
   else { c.textContent = "就绪"; c.className = "tag ok"; }
 }
@@ -807,7 +825,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _run(self, body):
         if not HAS_BASH:
-            return self._json({"error": "这台机器上没有 bash：界面能开，但出图 / 出视频得在 Linux（或者装了 Git Bash / WSL 的机器）上跑"}, 400)
+            return self._json({"error": "这台机器上没有可用的 bash：界面能开，但出图 / 出视频要在 Linux（VM）里跑；装了能用的 Git Bash 也行"}, 400)
         task = str(body.get("task") or "")
         groups = [g for g in (body.get("groups") or []) if g in ALL_GROUPS and g != "clean"]
         data = {"groups": groups, "skip_slam": bool(body.get("skip_slam"))}

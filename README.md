@@ -69,6 +69,7 @@ exe 自己只干两件事 —— 找 `gui_app.py`、找 Python 3，不依赖别�
 | `selftest.sh` / `selftest.py` | 自检：不用数据集和 SLAM，自己造假数据把面板 / 拼图 / 偏差图 / 视频 / 网页界面整条链路跑一遍，最后打印通过数 |
 | `dump_api.sh` | 编译报错时用，打印当前 ORB-SLAM3 里相关 API 的真实签名 |
 | `fix_crlf.sh` | 修行尾，Windows 传过来的文件跑一下 |
+| `preview/` | 几张已经跑出来的示例图，先看看成品长什么样 |
 | `README_4seasons.md` | 详细说明：各种参数、产物路径、每种图怎么调 |
 
 ## 依赖

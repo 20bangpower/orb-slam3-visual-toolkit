@@ -1,48 +1,81 @@
-/* Windows 启动器源码：gcc -O2 -s -o orb-slam3-visual-toolkit.exe launcher.c */
+/* Windows 启动器源码：gcc -O2 -s -o orb-slam3-visual-toolkit.exe launcher.c
+ *
+ * 只干两件事：找到同目录（或上一级）的 gui_app.py、找到一个 Python 3，
+ * 然后用它们起本机的网页界面。
+ *
+ * 全走宽字符 API，所以解压路径里有中文、空格也没问题。
+ */
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <wchar.h>
 
-#define MAXP 2048
-#define MAXC 8192
+#define MAXP 4096
+#define MAXC 16384
 
-static int is_file(const char *p) {
-    DWORD a = GetFileAttributesA(p);
+static void say(const wchar_t *w) {          /* 宽字符 -> UTF-8 输出 */
+    char buf[MAXP * 4];
+    int n = WideCharToMultiByte(CP_UTF8, 0, w, -1, buf, (int)sizeof(buf), NULL, NULL);
+    if (n > 0) fputs(buf, stdout);
+}
+
+static int is_file(const wchar_t *p) {
+    DWORD a = GetFileAttributesW(p);
     return a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-static int on_path(const char *name, char *out) {
-    DWORD r = SearchPathA(NULL, name, ".exe", MAXP, out, NULL);
+static int on_path(const wchar_t *name, wchar_t *out) {
+    DWORD r = SearchPathW(NULL, name, L".exe", MAXP, out, NULL);
     return r > 0 && r < MAXP;
 }
 
-static int glob_first(const char *pattern, char *out) {
-    WIN32_FIND_DATAA fd;
-    HANDLE h = FindFirstFileA(pattern, &fd);
+static int glob_first(const wchar_t *pattern, wchar_t *out) {
+    WIN32_FIND_DATAW fd;
+    HANDLE h = FindFirstFileW(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) return 0;
     FindClose(h);
-    char dir[MAXP];
-    strncpy(dir, pattern, MAXP - 1);
+    wchar_t dir[MAXP];
+    wcsncpy(dir, pattern, MAXP - 1);
     dir[MAXP - 1] = 0;
-    char *s = strrchr(dir, '\\');
+    wchar_t *s = wcsrchr(dir, L'\\');
     if (s) *(s + 1) = 0; else dir[0] = 0;
-    snprintf(out, MAXP, "%s%s", dir, fd.cFileName);
+    _snwprintf(out, MAXP, L"%s%s", dir, fd.cFileName);
     return is_file(out);
 }
 
-static int find_python(char *exe, char *prefix) {
-    if (on_path("py", exe)) { strcpy(prefix, "-3 "); return 1; }
-    if (on_path("python", exe)) { prefix[0] = 0; return 1; }
-    if (on_path("python3", exe)) { prefix[0] = 0; return 1; }
-    char pat[MAXP];
-    const char *la = getenv("LOCALAPPDATA");
+static int find_python(wchar_t *exe, wchar_t *prefix) {
+    if (on_path(L"py", exe)) { wcscpy(prefix, L"-3 "); return 1; }
+    if (on_path(L"python", exe)) { prefix[0] = 0; return 1; }
+    if (on_path(L"python3", exe)) { prefix[0] = 0; return 1; }
+    wchar_t pat[MAXP];
+    const wchar_t *la = _wgetenv(L"LOCALAPPDATA");
     if (la) {
-        snprintf(pat, MAXP, "%s\\Programs\\Python\\Python3*\\python.exe", la);
+        _snwprintf(pat, MAXP, L"%s\\Programs\\Python\\Python3*\\python.exe", la);
         if (glob_first(pat, exe)) { prefix[0] = 0; return 1; }
     }
-    if (glob_first("C:\\Python3*\\python.exe", exe)) { prefix[0] = 0; return 1; }
+    if (glob_first(L"C:\\Python3*\\python.exe", exe)) { prefix[0] = 0; return 1; }
     return 0;
+}
+
+/* 命令行拆 token（认得双引号），只用来挑 --port 和原样转发 */
+static int wsplit(wchar_t *s, wchar_t **out, int max) {
+    int n = 0;
+    while (*s && n < max) {
+        while (*s == L' ' || *s == L'\t') s++;
+        if (!*s) break;
+        if (*s == L'"') {
+            s++;
+            out[n++] = s;
+            while (*s && *s != L'"') s++;
+            if (*s == L'"') *s++ = 0;
+        } else {
+            out[n++] = s;
+            while (*s && *s != L' ' && *s != L'\t') s++;
+            if (*s) *s++ = 0;
+        }
+    }
+    return n;
 }
 
 static void pause_hold(void) {
@@ -51,36 +84,39 @@ static void pause_hold(void) {
     getchar();
 }
 
-int main(int argc, char **argv) {
+int main(void) {
     SetConsoleOutputCP(CP_UTF8);
-    char exe[MAXP], dir[MAXP], script[MAXP], py[MAXP], prefix[8];
-    char cmd[MAXC];
 
-    GetModuleFileNameA(NULL, exe, MAXP);
-    strncpy(dir, exe, MAXP - 1);
+    wchar_t exe[MAXP], dir[MAXP], script[MAXP], py[MAXP], prefix[8], cmd[MAXC];
+    wchar_t cl[MAXC];
+    wchar_t *args[64];
+
+    wcsncpy(cl, GetCommandLineW(), MAXC - 1);
+    cl[MAXC - 1] = 0;
+    int nargs = wsplit(cl, args, 64);
+
+    GetModuleFileNameW(NULL, exe, MAXP);
+    wcsncpy(dir, exe, MAXP - 1);
     dir[MAXP - 1] = 0;
-    char *slash = strrchr(dir, '\\');
+    wchar_t *slash = wcsrchr(dir, L'\\');
     if (slash) *slash = 0;
 
-    const char *cands[3];
-    char c0[MAXP], c1[MAXP], c2[MAXP];
-    snprintf(c0, MAXP, "%s\\gui_app.py", dir);
-    snprintf(c1, MAXP, "%s\\outputs\\fig4_4seasons\\gui_app.py", dir);
-    snprintf(c2, MAXP, "%s\\..\\outputs\\fig4_4seasons\\gui_app.py", dir);
+    const wchar_t *cands[3];
+    wchar_t c0[MAXP], c1[MAXP], c2[MAXP];
+    _snwprintf(c0, MAXP, L"%s\\gui_app.py", dir);
+    _snwprintf(c1, MAXP, L"%s\\outputs\\fig4_4seasons\\gui_app.py", dir);
+    _snwprintf(c2, MAXP, L"%s\\..\\outputs\\fig4_4seasons\\gui_app.py", dir);
     cands[0] = c0; cands[1] = c1; cands[2] = c2;
 
     script[0] = 0;
     for (int i = 0; i < 3; i++) {
-        if (is_file(cands[i])) { strncpy(script, cands[i], MAXP - 1); script[MAXP - 1] = 0; break; }
+        if (is_file(cands[i])) { wcsncpy(script, cands[i], MAXP - 1); script[MAXP - 1] = 0; break; }
     }
 
     int port = 8770;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--port") == 0 && i + 1 < argc) {
-            port = atoi(argv[i + 1]);
-        } else if (strncmp(argv[i], "--port=", 7) == 0) {
-            port = atoi(argv[i] + 7);
-        }
+    for (int i = 1; i < nargs; i++) {
+        if (wcscmp(args[i], L"--port") == 0 && i + 1 < nargs) port = _wtoi(args[i + 1]);
+        else if (wcsncmp(args[i], L"--port=", 7) == 0) port = _wtoi(args[i] + 7);
     }
 
     printf("============================================================\n");
@@ -90,11 +126,11 @@ int main(int argc, char **argv) {
     if (!script[0]) {
         printf("[x] 没找到 gui_app.py。\n");
         printf("    这个 exe 要和 gui_app.py 放在一起（或者放在它上一级目录）。\n");
-        printf("    当前目录：%s\n", dir);
+        say(L"    当前目录："); say(dir); say(L"\n");
         pause_hold();
         return 1;
     }
-    printf("  脚本    : %s\n", script);
+    say(L"  脚本    : "); say(script); say(L"\n");
 
     if (!find_python(py, prefix)) {
         printf("[x] 没找到 Python。\n");
@@ -103,28 +139,28 @@ int main(int argc, char **argv) {
         pause_hold();
         return 1;
     }
-    printf("  Python  : %s\n", py);
+    say(L"  Python  : "); say(py); say(L"\n");
     printf("  界面地址: http://127.0.0.1:%d/\n", port);
     printf("  Ctrl+C 退出\n");
     printf("============================================================\n\n");
     fflush(stdout);
 
-    snprintf(cmd, MAXC, "\"%s\" %s\"%s\"", py, prefix, script);
-    for (int i = 1; i < argc; i++) {
-        size_t used = strlen(cmd);
-        if (used + strlen(argv[i]) + 4 >= MAXC) break;
-        strcat(cmd, " \"");
-        strcat(cmd, argv[i]);
-        strcat(cmd, "\"");
+    _snwprintf(cmd, MAXC, L"\"%s\" %s\"%s\"", py, prefix, script);
+    for (int i = 1; i < nargs; i++) {
+        size_t used = wcslen(cmd);
+        if (used + wcslen(args[i]) + 4 >= MAXC) break;
+        wcscat(cmd, L" \"");
+        wcscat(cmd, args[i]);
+        wcscat(cmd, L"\"");
     }
 
-    STARTUPINFOA si;
+    STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    if (!CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, dir, &si, &pi)) {
+    if (!CreateProcessW(NULL, cmd, NULL, NULL, TRUE, 0, NULL, dir, &si, &pi)) {
         printf("[x] 启动失败，错误码 %lu\n", GetLastError());
         pause_hold();
         return 1;

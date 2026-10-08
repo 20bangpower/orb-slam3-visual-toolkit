@@ -31,6 +31,7 @@ bash start_gui.sh
 Windows 上不想敲命令，就双击同一个目录里的 `orb-slam3-visual-toolkit.exe`（机器要有 Python 3），
 它会自己找到 `gui_app.py` 并起服务、打开浏览器。
 解压出来如果被系统拦下：SmartScreen 弹窗点「更多信息 -> 仍要运行」，或者右键 exe -> 属性 -> 勾上「解除锁定」。
+解压到带中文或空格的目录也能用。
 
 浏览器会自动打开 `http://127.0.0.1:8770`，页面上：
 

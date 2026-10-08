@@ -772,7 +772,9 @@ class Handler(BaseHTTPRequestHandler):
                  ".csv": "text/csv; charset=utf-8", ".txt": "text/plain; charset=utf-8",
                  ".log": "text/plain; charset=utf-8"}.get(ext, "application/octet-stream")
         size = os.path.getsize(p)
-        start, end, code = 0, max(0, size - 1), 200
+        if size <= 0:                    # 空文件：如实回 0 字节，别让前端等一个不存在的字节
+            return self._send(200, ctype, b"")
+        start, end, code = 0, size - 1, 200
         rng = self.headers.get("Range") or ""
         if rng.startswith("bytes=") and size > 0:
             try:
@@ -827,6 +829,9 @@ class Handler(BaseHTTPRequestHandler):
         if not HAS_BASH:
             return self._json({"error": "这台机器上没有可用的 bash：界面能开，但出图 / 出视频要在 Linux（VM）里跑；装了能用的 Git Bash 也行"}, 400)
         task = str(body.get("task") or "")
+        if task not in ("figures", "deviation", "video", "frame_pairs", "all"):
+            return self._json({"error": "未知任务 %r：可选 figures / deviation / video / frame_pairs / all"
+                                        % task}, 400)
         groups = [g for g in (body.get("groups") or []) if g in ALL_GROUPS and g != "clean"]
         data = {"groups": groups, "skip_slam": bool(body.get("skip_slam"))}
         if str(body.get("ds") or "").strip():

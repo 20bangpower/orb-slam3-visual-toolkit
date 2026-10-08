@@ -271,118 +271,185 @@ PAGE = r"""<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ORB-SLAM3 可视化对照工具链</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--line:#e2e5ea;--txt:#1c2430;--mut:#6b7684;
---blue:#1f6feb;--green:#1a7f37;--red:#c0392b}
+:root{
+  --bg:#eef1f6;--card:#fff;--line:#e4e9f0;--txt:#0f1b2d;--mut:#68768e;
+  --accent:#2563eb;--accent2:#1d4ed8;--ok:#0f9d58;--danger:#dc2626;
+  --shadow:0 1px 2px rgba(15,27,45,.05),0 10px 26px -14px rgba(15,27,45,.22);
+  --r:14px;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
-font:14px/1.55 "Noto Sans CJK SC","WenQuanYi Zen Hei","Microsoft YaHei",sans-serif}
-header{background:#12233b;color:#fff;padding:13px 20px;display:flex;align-items:center;gap:12px}
-header h1{font-size:16px;margin:0;font-weight:600}
-.wrap{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-.card h2{font-size:13px;margin:0 0 10px;color:var(--mut);font-weight:600;letter-spacing:.04em}
-.row{display:flex;gap:8px;align-items:center;margin:7px 0;flex-wrap:wrap}
-label.k{width:150px;color:var(--mut);flex:none}
-input[type=text]{flex:1;min-width:200px;padding:7px 9px;border:1px solid var(--line);
-border-radius:7px;font:inherit;background:#fbfcfe;color:var(--txt)}
-input.num{flex:none;width:56px}
-button{font:inherit;padding:7px 13px;border-radius:7px;border:1px solid var(--line);
-background:#fff;cursor:pointer}
-button:hover{background:#f0f3f7}
-button.p{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
-button.g{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
-button.d{color:var(--red);border-color:#eccfcb}
-button:disabled{opacity:.45;cursor:not-allowed}
-.chk{display:inline-flex;gap:6px;align-items:center;margin-right:14px}
-.tag{font-size:12px;padding:1px 7px;border-radius:99px;background:#eef2f7;color:var(--mut)}
-.tag.miss{background:#fdecea;color:var(--red)}
-.tag.ok{background:#e7f6ec;color:var(--green)}
-.mut{color:var(--mut);font-size:12px}
-pre.log{margin:0;background:#0e1726;color:#d7e3f4;padding:12px;border-radius:8px;
-max-height:340px;overflow:auto;font:12px/1.5 Consolas,Menlo,monospace;white-space:pre-wrap}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-.item{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fbfcfe}
-.item img,.item video{width:100%;display:block;background:#fff}
-.item .cap{padding:6px 9px;font-size:12px;color:var(--mut);display:flex;gap:8px;align-items:center}
-.item .cap a{color:var(--blue);text-decoration:none}
-.pdf{padding:26px;text-align:center;color:#8a94a3;background:#fff}
-.bar{height:6px;background:#e8ecf2;border-radius:99px;overflow:hidden;margin-bottom:8px}
-.bar>i{display:block;height:100%;width:35%;background:var(--blue);animation:sl 1.1s infinite}
+  font:14px/1.6 "Segoe UI","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Zen Hei","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+header{background:linear-gradient(115deg,#0b1a2f 0%,#16314f 55%,#1d4b7a 100%);
+  color:#fff;padding:16px 26px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 8px 22px -10px rgba(9,22,40,.55)}
+header h1{margin:0;font-size:17px;font-weight:650;letter-spacing:.2px}
+header .sub{margin-left:11px;padding-left:11px;border-left:1px solid rgba(255,255,255,.22);
+  font-size:12.5px;color:#9cb8da;font-weight:400}
+header .sp{flex:1}
+
+.wrap{max-width:1300px;margin:0 auto;padding:18px;display:grid;gap:16px;
+  grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);align-items:start}
+.col{display:grid;gap:16px;min-width:0}
+@media (max-width:1040px){.wrap{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 14px;font-size:13px;font-weight:650;color:var(--txt);
+  letter-spacing:.03em;display:flex;align-items:center;gap:9px}
+.card h2 .n{width:20px;height:20px;flex:none;border-radius:7px;background:#eaf0ff;color:var(--accent2);
+  font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.card h2 .sp{flex:1}
+
+.row{display:flex;gap:9px;align-items:center;margin:8px 0;flex-wrap:wrap}
+label.k{width:132px;flex:none;color:var(--mut);font-size:13px}
+input[type=text]{flex:1;min-width:180px;padding:8px 11px;border:1px solid var(--line);
+  border-radius:9px;font:inherit;background:#fbfcfe;color:var(--txt);transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus{outline:0;border-color:#b9cdf5;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+input.num{flex:none;width:60px;text-align:center}
+
+button{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--line);
+  background:#fff;color:var(--txt);cursor:pointer;font-size:13.5px;
+  transition:background .15s,border-color .15s,box-shadow .15s,transform .06s}
+button:hover{background:#f4f7fc;border-color:#d3dced}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(37,99,235,.28)}
+button.p{background:linear-gradient(180deg,#2f74f0,#2360e0);border-color:#1f57cf;color:#fff;font-weight:600;
+  box-shadow:0 1px 2px rgba(29,78,216,.28)}
+button.p:hover{background:linear-gradient(180deg,#3579f2,#2158d4)}
+button.g{background:linear-gradient(180deg,#12a45d,#0e8f51);border-color:#0c7f48;color:#fff;font-weight:600;
+  box-shadow:0 1px 2px rgba(15,157,88,.28)}
+button.g:hover{background:linear-gradient(180deg,#14ae63,#0f9656)}
+button.d{color:var(--danger);border-color:#f0cdc9;background:#fff}
+button.d:hover{background:#fdf1ef;border-color:#e7b7b1}
+button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+
+.chk{display:inline-flex;gap:7px;align-items:center;margin-right:16px;font-size:13.5px}
+input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+input[type=checkbox]:disabled{cursor:default}
+
+.tag{font-size:11.5px;padding:2px 9px;border-radius:99px;background:#eef2f8;color:var(--mut);
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:#a9b6c9}
+.tag.ok{background:#e6f7ed;color:#0b6b3d}
+.tag.ok::before{background:#12a45d}
+.tag.miss{background:#fdecea;color:#a52018}
+.tag.miss::before{background:#e0483c}
+header .tag{background:rgba(255,255,255,.14);color:#dce9f9;padding:4px 12px;font-weight:600}
+header .tag.ok{background:rgba(18,164,93,.22);color:#b6f0cd}
+header .tag.ok::before{background:#35d17f}
+header .tag.miss{background:rgba(224,72,60,.22);color:#ffc9c4}
+header .tag.miss::before{background:#ff8b80}
+.mut{color:var(--mut);font-size:12.5px}
+
+pre.log{margin:0;background:#0d1626;color:#cddcef;padding:14px 16px;border-radius:11px;
+  max-height:330px;overflow:auto;font:12.2px/1.65 ui-monospace,Consolas,Menlo,monospace;
+  white-space:pre-wrap;word-break:break-word;border:1px solid #1b2a42}
+pre.log::-webkit-scrollbar{width:9px}
+pre.log::-webkit-scrollbar-thumb{background:#2b3d59;border-radius:9px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:13px}
+.item{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fbfcfe;
+  display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s,border-color .18s}
+.item:hover{box-shadow:0 10px 24px -14px rgba(15,27,45,.35);transform:translateY(-2px);border-color:#d5deec}
+.item img,.item video{width:100%;display:block;background:#fff;max-height:190px;object-fit:contain}
+.item .cap{padding:8px 11px;font-size:12px;color:var(--mut);display:flex;gap:8px;align-items:center;
+  border-top:1px solid var(--line);background:#fff}
+.item .cap a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdf{padding:30px;text-align:center;color:#93a0b4;background:#fff;font-size:12.5px;letter-spacing:.06em}
+
+.bar{height:4px;background:#e8edf5;border-radius:99px;overflow:hidden;margin:0 0 12px}
+.bar>i{display:block;height:100%;width:35%;border-radius:99px;
+  background:linear-gradient(90deg,#2f74f0,#5aa0ff);animation:sl 1.15s infinite ease-in-out}
 @keyframes sl{0%{margin-left:-35%}100%{margin-left:100%}}
-#modal{position:fixed;inset:0;background:rgba(12,20,33,.5);display:none;
-align-items:center;justify-content:center}
+
+#modal{position:fixed;inset:0;background:rgba(10,18,31,.55);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
 #modal.on{display:flex}
-.dlg{background:#fff;border-radius:10px;width:min(720px,92vw);max-height:80vh;
-display:flex;flex-direction:column}
-.dlg .hd{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600}
-.dlg .bd{padding:10px 16px;overflow:auto}
-.dlg .ft{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;
-justify-content:flex-end}
-.dlist{display:grid;gap:4px;margin-top:6px}
-.dlist button{text-align:left}
+.dlg{background:#fff;border-radius:16px;width:min(760px,94vw);max-height:82vh;
+  display:flex;flex-direction:column;box-shadow:0 30px 60px -20px rgba(9,22,40,.5);overflow:hidden}
+.dlg .hd{padding:15px 18px;border-bottom:1px solid var(--line);font-weight:650;font-size:14px}
+.dlg .bd{padding:12px 18px;overflow:auto}
+.dlg .ft{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:9px;justify-content:flex-end}
+.dlist{display:grid;gap:5px;margin-top:9px}
+.dlist button{text-align:left;display:flex;align-items:center;gap:8px}
+.ditem::before{content:"\1F4C1";font-size:13px;opacity:.75}
+
+footer{max-width:1300px;margin:0 auto;padding:6px 18px 26px;color:var(--mut);font-size:12px}
 </style>
 </head>
 <body>
 <header>
-  <h1>ORB-SLAM3 可视化对照工具链</h1>
+  <h1>ORB-SLAM3 可视化对照工具链<span class="sub">正常数据 / 干扰数据 · Fig.4 对照版式</span></h1>
+  <span class="sp"></span>
   <span class="tag" id="chip">加载中</span>
-  <span style="flex:1"></span>
-  <span class="mut" id="scripts" style="color:#9fb0c6"></span>
 </header>
+
 <div class="wrap">
 
-  <div class="card">
-    <h2>1 数据集与路径</h2>
-    <div class="row">
-      <label class="k">数据集目录</label>
-      <input type="text" id="ds" placeholder="~/dataset/slam_stereo_pairs_0_99_20260929">
-      <button class="p" id="pickDs">指定数据集路径</button>
+  <div class="col">
+    <div class="card">
+      <h2><span class="n">1</span>数据集与路径</h2>
+      <div class="row">
+        <label class="k">数据集目录</label>
+        <input type="text" id="ds" placeholder="~/dataset/slam_stereo_pairs_0_99_20260929">
+        <button class="p" id="pickDs">指定数据集路径</button>
+      </div>
+      <div class="row">
+        <label class="k">ORB_SLAM3 根目录</label>
+        <input type="text" id="root">
+        <button id="pickRoot">浏览</button>
+        <button id="apply">应用</button>
+      </div>
+      <div class="mut" id="paths"></div>
     </div>
-    <div class="row">
-      <label class="k">ORB_SLAM3 根目录</label>
-      <input type="text" id="root">
-      <button id="pickRoot">浏览</button>
-      <button id="apply">应用</button>
+
+    <div class="card">
+      <h2><span class="n">2</span>分组与选项</h2>
+      <div class="row" id="groups"></div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="skipSlam"> 跳过 SLAM（复用已有结果，只重新拼图）</label>
+        <label class="chk">视频每帧停留 <input type="text" id="hold" class="num"> 秒</label>
+      </div>
     </div>
-    <div class="mut" id="paths"></div>
+
+    <div class="card">
+      <h2><span class="n">3</span>操作</h2>
+      <div class="row">
+        <button class="g" id="runFig">输出对比图</button>
+        <button class="g" id="runVideo">输出对比视频</button>
+        <button id="runDev">位移偏差图</button>
+        <button id="runPairs">逐帧对照图</button>
+        <button class="p" id="runAll">一键全部</button>
+        <button class="d" id="stopBtn" disabled>停止</button>
+      </div>
+      <div class="mut" id="hint">第一次用先点「指定数据集路径」。</div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>2 分组与选项</h2>
-    <div class="row" id="groups"></div>
-    <div class="row">
-      <label class="chk"><input type="checkbox" id="skipSlam"> 跳过 SLAM（复用已有结果，只重新拼图）</label>
-      <label class="chk">视频每帧停留 <input type="text" id="hold" class="num"> 秒</label>
+  <div class="col">
+    <div class="card">
+      <h2><span class="n">4</span>运行日志<span class="sp"></span><button id="clearLog">清空</button></h2>
+      <div class="bar" id="bar" style="display:none"><i></i></div>
+      <pre class="log" id="log">（还没有开始）</pre>
+      <div class="row"><span class="mut" id="jobInfo"></span></div>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>3 操作</h2>
-    <div class="row">
-      <button class="g" id="runFig">输出对比图</button>
-      <button class="g" id="runVideo">输出对比视频</button>
-      <button id="runDev">位移偏差图</button>
-      <button id="runPairs">逐帧对照图</button>
-      <button class="p" id="runAll">一键全部</button>
-      <button class="d" id="stopBtn" disabled>停止</button>
+    <div class="card">
+      <h2><span class="n">5</span>结果预览</h2>
+      <div class="grid" id="grid"></div>
+      <div class="mut" id="nores">还没有产物，先点上面的按钮。</div>
     </div>
-    <div class="mut" id="hint">第一次用先点「指定数据集路径」。</div>
-  </div>
-
-  <div class="card">
-    <h2>4 运行日志</h2>
-    <div class="bar" id="bar" style="display:none"><i></i></div>
-    <pre class="log" id="log">（还没有开始）</pre>
-    <div class="row"><button id="clearLog">清空</button><span class="mut" id="jobInfo"></span></div>
-  </div>
-
-  <div class="card">
-    <h2>5 结果预览</h2>
-    <div class="grid" id="grid"></div>
-    <div class="mut" id="nores">还没有产物，先点上面的按钮。</div>
   </div>
 
 </div>
+
+<footer>服务器 / ssh 场景：用 <code>bash start_gui.sh --no-browser</code> 起服务，本机再
+<code>ssh -L 8770:127.0.0.1:8770 用户@地址</code> 转发端口。</footer>
 
 <div id="modal"><div class="dlg">
   <div class="hd">选择文件夹</div>
@@ -421,7 +488,6 @@ function render() {
   $("root").value = S.root || "";
   $("hold").value = S.hold;
   $("skipSlam").checked = !!S.skip_slam;
-  $("scripts").textContent = "脚本目录 " + S.paths.scripts;
   $("paths").innerHTML = "结果图 " + esc(S.paths.figures) + "<br>视频 " + esc(S.paths.videos);
   var h = "", i, g, ok;
   for (i = 0; i < S.all_groups.length; i++) {

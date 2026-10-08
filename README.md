@@ -17,6 +17,7 @@ bash make_orb_inputs.sh    # 生成相机 yaml 和 TUM 关联文件
 bash patch_stereo.sh       # 编译双目可视化例程 stereo_tum_vi_vis
 bash run_compare.sh --all  # 跑 SLAM + 拼 Fig.4 对照图
 bash start_gui.sh          # 网页界面：点按钮就能出对比图 / 对比视频
+# Windows 上直接双击 orb-slam3-visual-toolkit.exe（机器要有 Python 3），起的是同一个界面
 
 bash run_deviation.sh                # 位移偏差 + 建图点云对比
 bash run_video.sh --triple --slam    # 逐帧视频（正常 + 两组干扰并排）
@@ -25,8 +26,9 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 
 没有显示器的时候（服务器、ssh）在命令前加 `DISPLAY=`，或者用 `xvfb-run -a` 包一层。
 
-不想敲命令就用网页界面：`bash start_gui.sh` 起服务，浏览器打开 `http://127.0.0.1:8770`，
-页面上选数据集目录、点「输出对比图 / 输出对比视频」，日志实时滚动，跑完直接预览。
+不想敲命令就用网页界面：`bash start_gui.sh`（Windows 上双击 `orb-slam3-visual-toolkit.exe`）起服务，
+浏览器自动打开 `http://127.0.0.1:8770`，页面上选数据集目录、点「输出对比图 / 输出对比视频」，
+日志实时滚动，跑完直接预览。
 只用 Python 标准库，不用装 flask；ssh 场景用 `bash start_gui.sh --no-browser` 配合 `ssh -L 8770:127.0.0.1:8770` 转发端口。
 
 路径可以用环境变量改：`ROOT`（默认 `~/ORB_SLAM3`）、`DS`（默认 `~/dataset/slam_stereo_pairs_0_99_20260929`）、
@@ -56,6 +58,8 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 | `make_demo_data.py` | 造一份假的演示数据，没有数据集也能先跑通版式 |
 | `gui_app.py` | 网页界面后端：起本地服务、接按钮、跑脚本、把日志和产物回传页面 |
 | `start_gui.sh` | 起网页界面（`bash start_gui.sh`） |
+| `orb-slam3-visual-toolkit.exe` | Windows 双击即用的启动器：找到 `gui_app.py` 和 Python，起界面并打开浏览器 |
+| `launcher.c` | 上面那个 exe 的源码，`gcc -O2 -s -o orb-slam3-visual-toolkit.exe launcher.c` 重新编译 |
 | `ls_vis_4seasons.sh` | 自检脚本，逐条检查路径和源码改动在不在 |
 | `dump_api.sh` | 编译报错时用，打印当前 ORB-SLAM3 里相关 API 的真实签名 |
 | `fix_crlf.sh` | 修行尾，Windows 传过来的文件跑一下 |
@@ -67,6 +71,7 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 - Python 3 + numpy、matplotlib、Pillow
 - ffmpeg、xvfb（可选，没有 ffmpeg 就只出 GIF）
 - 中文字体（可选，没装的话图里自动用英文）
+- Windows 上只跑网页界面的话，装个 Python 3 就够（出图仍然在 Linux 上跑）
 
 ```bash
 sudo apt-get install -y python3-numpy python3-matplotlib python3-pil ffmpeg xvfb

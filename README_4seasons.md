@@ -28,6 +28,9 @@ cd ~/ORB_SLAM3/outputs/fig4_4seasons
 bash start_gui.sh
 ```
 
+Windows 上不想敲命令，就双击同一个目录里的 `orb-slam3-visual-toolkit.exe`（机器要有 Python 3），
+它会自己找到 `gui_app.py` 并起服务、打开浏览器。
+
 浏览器会自动打开 `http://127.0.0.1:8770`，页面上：
 
 - **指定数据集路径** — 弹窗里像文件管理器一样点进数据集目录（带 `clean/` 的会标注「有 clean」）。

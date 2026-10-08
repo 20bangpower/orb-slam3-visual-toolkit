@@ -38,7 +38,9 @@ ALL_GROUPS = ["clean", "fixed_pixel", "world_plane"]
 GROUP_CN = {"clean": "正常数据集",
             "fixed_pixel": "固定像素贴图",
             "world_plane": "世界平面投影贴图"}
-BASH = shutil.which("bash") or "/bin/bash"
+BASH = shutil.which("bash")
+HAS_BASH = bool(BASH)
+BASH = BASH or "/bin/bash"
 IMG_EXT = (".png", ".jpg", ".jpeg", ".gif", ".svg")
 VID_EXT = (".mp4", ".webm", ".gif")
 
@@ -134,6 +136,7 @@ class Config(object):
         return {"root": self.root, "ds": ds, "py": self.py, "hold": self.hold,
                 "skip_slam": skip, "groups": groups, "paths": p,
                 "available": avail, "group_cn": GROUP_CN, "all_groups": ALL_GROUPS,
+                "has_bash": HAS_BASH,
                 "has_scripts": all(os.path.isfile(os.path.join(self.scripts, n))
                                    for n in ("run_compare.sh", "run_deviation.sh",
                                              "run_video.sh")),
@@ -500,6 +503,7 @@ function render() {
   $("groups").innerHTML = h;
   var c = $("chip");
   if (!S.has_scripts) { c.textContent = "找不到脚本"; c.className = "tag miss"; }
+  else if (!S.has_bash) { c.textContent = "缺 bash（出图得在 Linux 上跑）"; c.className = "tag miss"; }
   else if (!S.has_ds_clean) { c.textContent = "还没指定数据集"; c.className = "tag miss"; }
   else { c.textContent = "就绪"; c.className = "tag ok"; }
 }
@@ -802,6 +806,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"error": "not found"}, 404)
 
     def _run(self, body):
+        if not HAS_BASH:
+            return self._json({"error": "这台机器上没有 bash：界面能开，但出图 / 出视频得在 Linux（或者装了 Git Bash / WSL 的机器）上跑"}, 400)
         task = str(body.get("task") or "")
         groups = [g for g in (body.get("groups") or []) if g in ALL_GROUPS and g != "clean"]
         data = {"groups": groups, "skip_slam": bool(body.get("skip_slam"))}

@@ -21,6 +21,34 @@ cd ~/ORB_SLAM3/outputs/fig4_4seasons
 bash run_compare.sh --all
 ```
 
+## 网页界面（不想敲命令就用这个）
+
+```bash
+cd ~/ORB_SLAM3/outputs/fig4_4seasons
+bash start_gui.sh
+```
+
+浏览器会自动打开 `http://127.0.0.1:8770`，页面上：
+
+- **指定数据集路径** — 弹窗里像文件管理器一样点进数据集目录（带 `clean/` 的会标注「有 clean」）。
+- **输出对比图** — 跑 `run_compare.sh --all`，出 Fig.4 版式对照图。
+- **输出对比视频** — 跑 `run_video.sh --triple`，出逐帧对照视频。
+- 另外还有 `位移偏差图` / `逐帧对照图` / `一键全部` / `停止`。
+- 中间是实时日志，跑完在最下面直接预览图片、播放视频。
+
+两个选项：`跳过 SLAM`（复用已有结果，只重新拼图）、`视频每帧停留 N 秒`。
+服务器 / ssh 场景：
+
+```bash
+bash start_gui.sh --no-browser        # 服务端不开浏览器
+# 本机再转发端口：
+ssh -L 8770:127.0.0.1:8770 用户名@服务器地址
+# 然后本地浏览器打开 http://127.0.0.1:8770
+```
+
+界面只用 Python 标准库（不需要 flask / tkinter），脚本照旧调用现有那几个 `.sh`，
+组数还是自适应的 —— 只有两组数据一样能出图。
+
 ## 只有两组数据也能跑
 
 三组（`clean` + `fixed_pixel` + `world_plane`）是完整形态，但脚本不写死组数：
@@ -296,6 +324,8 @@ bash run_deviation.sh
 | `export_frame_pairs.py` / `run_frame_pairs.sh` | 逐帧 clean vs 干扰 对照图 + 对照表页 + PDF（不跑 SLAM） |
 | `make_fig4_video.py` / `run_video.sh` | 逐帧对照 -> 视频（mp4/gif），每帧停留 N 秒 |
 | `plot_deviation.py` / `run_deviation.sh` | 位移偏差折线 + 建图对比两面板图（辅助分析） |
+| `gui_app.py` | 网页界面后端：起本地服务、接按钮、跑脚本、把日志和产物回传页面 |
+| `start_gui.sh` | 起网页界面（`bash start_gui.sh`） |
 
 ## 数据集要点（照抄包内 README，别踩坑）
 

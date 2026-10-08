@@ -16,6 +16,7 @@ bash fix_crlf.sh           # 从 Windows 传过来的文件先修一下行尾，
 bash make_orb_inputs.sh    # 生成相机 yaml 和 TUM 关联文件
 bash patch_stereo.sh       # 编译双目可视化例程 stereo_tum_vi_vis
 bash run_compare.sh --all  # 跑 SLAM + 拼 Fig.4 对照图
+bash start_gui.sh          # 网页界面：点按钮就能出对比图 / 对比视频
 
 bash run_deviation.sh                # 位移偏差 + 建图点云对比
 bash run_video.sh --triple --slam    # 逐帧视频（正常 + 两组干扰并排）
@@ -23,6 +24,10 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 ```
 
 没有显示器的时候（服务器、ssh）在命令前加 `DISPLAY=`，或者用 `xvfb-run -a` 包一层。
+
+不想敲命令就用网页界面：`bash start_gui.sh` 起服务，浏览器打开 `http://127.0.0.1:8770`，
+页面上选数据集目录、点「输出对比图 / 输出对比视频」，日志实时滚动，跑完直接预览。
+只用 Python 标准库，不用装 flask；ssh 场景用 `bash start_gui.sh --no-browser` 配合 `ssh -L 8770:127.0.0.1:8770` 转发端口。
 
 路径可以用环境变量改：`ROOT`（默认 `~/ORB_SLAM3`）、`DS`（默认 `~/dataset/slam_stereo_pairs_0_99_20260929`）、
 `PY`（默认 `python3`），例如 `DS=/data/xxx ROOT=~/slam bash run_compare.sh --all`。
@@ -49,6 +54,8 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 | `run_video.sh` / `make_fig4_video.py` | 逐帧视频：`--fig4` 论文版式、`--pair` 简版、`--triple` 三组并排 |
 | `run_deviation.sh` / `plot_deviation.py` | 位移偏差折线 + 建图点云对比（两个干扰组时 2x2，只有一个时自动 1x2） |
 | `make_demo_data.py` | 造一份假的演示数据，没有数据集也能先跑通版式 |
+| `gui_app.py` | 网页界面后端：起本地服务、接按钮、跑脚本、把日志和产物回传页面 |
+| `start_gui.sh` | 起网页界面（`bash start_gui.sh`） |
 | `ls_vis_4seasons.sh` | 自检脚本，逐条检查路径和源码改动在不在 |
 | `dump_api.sh` | 编译报错时用，打印当前 ORB-SLAM3 里相关 API 的真实签名 |
 | `fix_crlf.sh` | 修行尾，Windows 传过来的文件跑一下 |

@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     CloseHandle(pi.hThread);
 
     if (rc != 0) {
-        printf("\n[x] 界面进程退出，返回码 %lu\n", rc);
+        printf("\n[i] 界面进程已退出（返回码 %lu）。上面若有提示，按提示处理。\n", rc);
         pause_hold();
     }
     return (int)rc;

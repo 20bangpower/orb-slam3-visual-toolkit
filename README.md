@@ -22,6 +22,7 @@ bash start_gui.sh          # 网页界面：点按钮就能出对比图 / 对比
 bash run_deviation.sh                # 位移偏差 + 建图点云对比
 bash run_video.sh --triple --slam    # 逐帧视频（正常 + 两组干扰并排）
 bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图，不用跑 SLAM
+bash selftest.sh           # 自检：不用数据集，自己造假数据把整条出图链路跑一遍
 ```
 
 没有显示器的时候（服务器、ssh）在命令前加 `DISPLAY=`，或者用 `xvfb-run -a` 包一层。
@@ -30,6 +31,10 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 浏览器自动打开 `http://127.0.0.1:8770`，页面上选数据集目录、点「输出对比图 / 输出对比视频」，
 日志实时滚动，跑完直接预览。
 只用 Python 标准库，不用装 flask；ssh 场景用 `bash start_gui.sh --no-browser` 配合 `ssh -L 8770:127.0.0.1:8770` 转发端口。
+
+Windows 上直接双击 `orb-slam3-visual-toolkit.exe`（和 `gui_app.py` 放同一个目录）就起同一个界面，机器上要有 Python 3。
+从 zip 解压出来如果被系统拦下：SmartScreen 弹窗点「更多信息 -> 仍要运行」，或者右键 exe -> 属性 -> 勾上「解除锁定」。
+exe 自己只干两件事 —— 找 `gui_app.py`、找 Python 3，不依赖别的库；没装 Python 3 会提示去官网装（记得勾 Add python.exe to PATH）。
 
 路径可以用环境变量改：`ROOT`（默认 `~/ORB_SLAM3`）、`DS`（默认 `~/dataset/slam_stereo_pairs_0_99_20260929`）、
 `PY`（默认 `python3`），例如 `DS=/data/xxx ROOT=~/slam bash run_compare.sh --all`。
@@ -61,6 +66,7 @@ bash run_frame_pairs.sh              # 逐帧「原图 vs 被改图」对照图�
 | `orb-slam3-visual-toolkit.exe` | Windows 双击即用的启动器：找到 `gui_app.py` 和 Python，起界面并打开浏览器 |
 | `launcher.c` | 上面那个 exe 的源码，`gcc -O2 -s -o orb-slam3-visual-toolkit.exe launcher.c` 重新编译 |
 | `ls_vis_4seasons.sh` | 自检脚本，逐条检查路径和源码改动在不在 |
+| `selftest.sh` / `selftest.py` | 自检：不用数据集和 SLAM，自己造假数据把面板 / 拼图 / 偏差图 / 视频 / 网页界面整条链路跑一遍，最后打印通过数 |
 | `dump_api.sh` | 编译报错时用，打印当前 ORB-SLAM3 里相关 API 的真实签名 |
 | `fix_crlf.sh` | 修行尾，Windows 传过来的文件跑一下 |
 | `README_4seasons.md` | 详细说明：各种参数、产物路径、每种图怎么调 |

@@ -30,6 +30,7 @@ bash start_gui.sh
 
 Windows 上不想敲命令，就双击同一个目录里的 `orb-slam3-visual-toolkit.exe`（机器要有 Python 3），
 它会自己找到 `gui_app.py` 并起服务、打开浏览器。
+解压出来如果被系统拦下：SmartScreen 弹窗点「更多信息 -> 仍要运行」，或者右键 exe -> 属性 -> 勾上「解除锁定」。
 
 浏览器会自动打开 `http://127.0.0.1:8770`，页面上：
 
@@ -93,7 +94,9 @@ bash patch_stereo.sh
 bash run_compare.sh --all
 ```
 
-自检：`bash ls_vis_4seasons.sh`
+自检：`bash ls_vis_4seasons.sh`（查路径和源码改动在不在）；
+`bash selftest.sh` 会自己造一份假数据，把面板 / 拼图 / 偏差图 / 视频 / 网页界面整条链路跑一遍，
+不需要数据集也不用跑 SLAM，跑完打印 x/y 通过。
 
 只重跑某一环：
 
@@ -329,6 +332,8 @@ bash run_deviation.sh
 | `plot_deviation.py` / `run_deviation.sh` | 位移偏差折线 + 建图对比两面板图（辅助分析） |
 | `gui_app.py` | 网页界面后端：起本地服务、接按钮、跑脚本、把日志和产物回传页面 |
 | `start_gui.sh` | 起网页界面（`bash start_gui.sh`） |
+| `orb-slam3-visual-toolkit.exe` | Windows 双击启动器：找到 `gui_app.py` 和 Python 3，起界面并打开浏览器（源码 `launcher.c`） |
+| `selftest.sh` / `selftest.py` | 自检：造假数据把面板 / 拼图 / 偏差图 / 视频 / 网页界面整条链路跑一遍 |
 
 ## 数据集要点（照抄包内 README，别踩坑）
 

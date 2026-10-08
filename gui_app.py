@@ -22,12 +22,14 @@ import argparse
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import threading
 import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import urllib.request
 from urllib.parse import urlparse, parse_qs
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -826,6 +828,38 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"job": job.key, "title": job.title})
 
 
+def port_busy(host, port):
+    """能不能独占绑上这个端口（Windows 上必须用 SO_EXCLUSIVEADDRUSE 才算准）。"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        s.bind((host, port))
+        return False
+    except OSError:
+        return True
+    finally:
+        s.close()
+
+
+def port_listening(host, port, timeout=0.7):
+    try:
+        s = socket.create_connection(("127.0.0.1" if host in ("0.0.0.0", "::") else host, port),
+                                     timeout=timeout)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
+def gui_alive(url, timeout=1.2):
+    try:
+        with urllib.request.urlopen(url + "api/state", timeout=timeout) as r:
+            return b"all_groups" in r.read()
+    except Exception:
+        return False
+
+
 def main():
     ap = argparse.ArgumentParser(description="ORB-SLAM3 可视化对照工具链 · 简易网页界面")
     ap.add_argument("--host", default="127.0.0.1")
@@ -850,6 +884,16 @@ def main():
     print("   数据集     : " + (st["ds"] or "（未指定，页面上点「指定数据集路径」）"))
     print("   Ctrl+C 退出")
     print("=" * 60)
+    if port_busy(a.host, a.port) and port_listening(a.host, a.port):
+        if gui_alive(url):
+            print("[i] %s 上已经有一个界面在跑了 —— 直接用浏览器打开它就行，不用重复启动。" % url)
+            print("    确实要再开一个： python3 gui_app.py --port %d" % (a.port + 1))
+            if not a.no_browser:
+                webbrowser.open(url)
+        else:
+            print("[x] 端口 %d 被别的程序占了，换一个： python3 gui_app.py --port %d"
+                  % (a.port, a.port + 1))
+        return 1
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     if not a.no_browser:
         threading.Thread(target=lambda: (time.sleep(0.7), webbrowser.open(url)),
@@ -863,4 +907,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

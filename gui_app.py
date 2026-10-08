@@ -284,12 +284,8 @@ body{margin:0;background:var(--bg);color:var(--txt);
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 
-header{background:linear-gradient(115deg,#0b1a2f 0%,#16314f 55%,#1d4b7a 100%);
-  color:#fff;padding:16px 26px;display:flex;align-items:center;gap:14px;
-  box-shadow:0 8px 22px -10px rgba(9,22,40,.55)}
-header h1{margin:0;font-size:17px;font-weight:650;letter-spacing:.2px}
-header .sub{margin-left:11px;padding-left:11px;border-left:1px solid rgba(255,255,255,.22);
-  font-size:12.5px;color:#9cb8da;font-weight:400}
+header{background:#152c47;color:#fff;padding:15px 26px;display:flex;align-items:center;gap:14px}
+header h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.2px}
 header .sp{flex:1}
 
 .wrap{max-width:1300px;margin:0 auto;padding:18px;display:grid;gap:16px;
@@ -379,12 +375,11 @@ pre.log::-webkit-scrollbar-thumb{background:#2b3d59;border-radius:9px}
 .dlist button{text-align:left;display:flex;align-items:center;gap:8px}
 .ditem::before{content:"\1F4C1";font-size:13px;opacity:.75}
 
-footer{max-width:1300px;margin:0 auto;padding:6px 18px 26px;color:var(--mut);font-size:12px}
 </style>
 </head>
 <body>
 <header>
-  <h1>ORB-SLAM3 可视化对照工具链<span class="sub">正常数据 / 干扰数据 · Fig.4 对照版式</span></h1>
+  <h1>ORB-SLAM3 可视化对照工具链</h1>
   <span class="sp"></span>
   <span class="tag" id="chip">加载中</span>
 </header>
@@ -405,7 +400,7 @@ footer{max-width:1300px;margin:0 auto;padding:6px 18px 26px;color:var(--mut);fon
         <button id="pickRoot">浏览</button>
         <button id="apply">应用</button>
       </div>
-      <div class="mut" id="paths"></div>
+      <div class="mut" id="paths">结果图和视频：点文件名下载到本机「下载」文件夹。</div>
     </div>
 
     <div class="card">
@@ -448,9 +443,6 @@ footer{max-width:1300px;margin:0 auto;padding:6px 18px 26px;color:var(--mut);fon
 
 </div>
 
-<footer>服务器 / ssh 场景：用 <code>bash start_gui.sh --no-browser</code> 起服务，本机再
-<code>ssh -L 8770:127.0.0.1:8770 用户@地址</code> 转发端口。</footer>
-
 <div id="modal"><div class="dlg">
   <div class="hd">选择文件夹</div>
   <div class="bd">
@@ -488,7 +480,6 @@ function render() {
   $("root").value = S.root || "";
   $("hold").value = S.hold;
   $("skipSlam").checked = !!S.skip_slam;
-  $("paths").innerHTML = "结果图 " + esc(S.paths.figures) + "<br>视频 " + esc(S.paths.videos);
   var h = "", i, g, ok;
   for (i = 0; i < S.all_groups.length; i++) {
     g = S.all_groups[i];
@@ -532,7 +523,7 @@ function card(it, kind) {
   else if (low.slice(-4) === ".pdf") { inner = '<div class="pdf">PDF</div>'; }
   else { inner = '<a href="' + url + '" target="_blank"><img src="' + url + '"></a>'; }
   return '<div class="item">' + inner + '<div class="cap"><a href="' + url +
-         '" target="_blank">' + esc(it.name) + '</a><span style="flex:1"></span><span>' +
+         '" target="_blank" download>' + esc(it.name) + '</a><span style="flex:1"></span><span>' +
          kb(it.size) + '</span></div></div>';
 }
 

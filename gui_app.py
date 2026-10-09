@@ -414,6 +414,7 @@ pre.log::-webkit-scrollbar-thumb{background:#2b3d59;border-radius:9px}
         <input type="text" id="ds" placeholder="~/dataset/slam_stereo_pairs_0_99_20260929">
         <button class="p" id="pickDs">指定数据集路径</button>
       </div>
+      <div class="mut">正常数据集：clean　固定像素贴图：fixed_pixel　世界平面投影贴图：world_plane</div>
       <div class="row">
         <label class="k">ORB_SLAM3 根目录</label>
         <input type="text" id="root">

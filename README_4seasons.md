@@ -90,6 +90,7 @@ bash make_orb_inputs.sh
 bash patch_stereo.sh
 #    默认右图用 FrameDrawer::DrawFrame()（带状态条）。
 #    万一你的分支没有 DrawFrame：bash patch_stereo.sh --plain 重编（改成自己画框）。
+#    GetWorldPos()/GetCameraCenter() 返回 cv::Mat 还是 Eigen::Vector3f 都能编（自动识别，不用手改）。
 
 # 4) 跑 SLAM + 画面板 + 拼图
 bash run_compare.sh --all

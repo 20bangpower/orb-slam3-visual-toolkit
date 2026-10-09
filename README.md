@@ -54,7 +54,7 @@ Windows 上起界面只要 Python 3，但出图那几步要 bash，所以还是�
 | `patch_mono.sh` | 单目版本，备用（`run_compare.sh --mono`） |
 | `stereo_tum_vi_vis.cc` | 双目例程源码：存当前帧、导轨迹和地图点 csv、开 Viewer |
 | `mono_tum_vis.cc` | 单目例程源码，同上 |
-| `vis_export.h` | 导出相关的代码，写 map_points.csv / keyframes.csv / 特征点 csv |
+| `vis_export.h` | 导出相关的代码，写 map_points.csv / keyframes.csv / 特征点 csv；兼容 GetWorldPos() 返回 cv::Mat 或 Eigen::Vector3f 两种 ORB-SLAM3 分支 |
 | `patch_cmake.py` | 编译辅助，自动找 CMake 里的目标并复用它的编译参数 |
 | `build_mono_vis.py` | 单目版的编译辅助 |
 | `install_dataset.sh` | 数据集 SHA256 校验，顺便生成路径清单 |

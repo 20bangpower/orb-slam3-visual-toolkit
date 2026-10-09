@@ -16,7 +16,8 @@
 //   F###_kf_traj.txt / F###_cam_traj.txt   （到第 ### 帧为止的位姿快照）
 //
 // 常见的分支差异（本仓库所基于的 ORB-SLAM3 副本即如此）：
-//   * MapPoint::GetWorldPos() / KeyFrame::GetCameraCenter() 返回 Eigen::Vector3f
+//   * MapPoint::GetWorldPos() / KeyFrame::GetCameraCenter() 返回类型随分支而异
+//     （cv::Mat 或 Eigen::Vector3f），本文件自动识别，两种分支都能编译
 //   * 当前帧那帧图改成自己用 cv::rectangle 画，不再依赖 FrameDrawer::DrawFrame()
 //
 // 另有 2 处需按实际分支核对（编译报错就改这两行）：
@@ -36,6 +37,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 #include <Eigen/Core>
 #include <opencv2/core/core.hpp>
@@ -66,6 +68,42 @@
 #endif
 
 namespace visexp {
+
+// ---------------------------------------------------------------------------
+// 0) 三维点通用解包：兼容 cv::Mat 与 Eigen::Vector3f 两种 ORB-SLAM3 分支
+//    - 上游 / 多数分支：GetWorldPos() / GetCameraCenter() 返回 cv::Mat(3,1,CV_32F)
+//    - 部分改过的分支：返回 Eigen::Vector3f
+//    非模板重载接 cv::Mat，模板重载接 Eigen（用 enable_if 排除 cv::Mat，避免歧义）
+// ---------------------------------------------------------------------------
+namespace detail {
+
+inline void unproject(const cv::Mat& m, float& x, float& y, float& z)
+{
+    x = y = z = 0.f;
+    if(m.empty())
+        return;
+    cv::Mat d;
+    m.convertTo(d, CV_32F);
+    if(!d.isContinuous())
+        d = d.clone();
+    const float* p = d.ptr<float>(0);
+    const size_t n = d.total();
+    if(n >= 1) x = p[0];
+    if(n >= 2) y = p[1];
+    if(n >= 3) z = p[2];
+}
+
+template <typename Vec>
+inline typename std::enable_if<
+    !std::is_same<typename std::decay<Vec>::type, cv::Mat>::value, void>::type
+unproject(const Vec& v, float& x, float& y, float& z)
+{
+    x = static_cast<float>(v(0));
+    y = static_cast<float>(v(1));
+    z = static_cast<float>(v(2));
+}
+
+}  // namespace detail
 
 inline std::string ensureDir(const std::string& dir)
 {
@@ -214,9 +252,10 @@ inline int saveMapPoints(ORB_SLAM3::System& SLAM, const std::string& path,
     {
         if(!vpMPs[i] || vpMPs[i]->isBad())
             continue;
-        // 本分支返回 Eigen::Vector3f
-        const Eigen::Vector3f Pw = vpMPs[i]->GetWorldPos();
-        f << Pw(0) << "," << Pw(1) << "," << Pw(2) << "\n";
+        // 兼容 cv::Mat / Eigen::Vector3f：统一解包成 float
+        float mx = 0.f, my = 0.f, mz = 0.f;
+        detail::unproject(vpMPs[i]->GetWorldPos(), mx, my, mz);
+        f << mx << "," << my << "," << mz << "\n";
         n++;
     }
     if(!quiet)
@@ -244,8 +283,10 @@ inline int saveKeyFrames(ORB_SLAM3::System& SLAM, const std::string& path,
     {
         if(!vpKFs[i] || vpKFs[i]->isBad())
             continue;
-        const Eigen::Vector3f C = vpKFs[i]->GetCameraCenter();
-        f << C(0) << "," << C(1) << "," << C(2) << "\n";
+        // 兼容 cv::Mat / Eigen::Vector3f：统一解包成 float
+        float kx = 0.f, ky = 0.f, kz = 0.f;
+        detail::unproject(vpKFs[i]->GetCameraCenter(), kx, ky, kz);
+        f << kx << "," << ky << "," << kz << "\n";
         n++;
     }
     if(!quiet)
